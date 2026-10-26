@@ -31,8 +31,8 @@ th { font-size: .9rem; }
 <p class="sub">Cygnus Shard Storm — Portal Immunity Instability</p>
 
 <section class="panel">
-  <label for="lastFlip">前回の免疫付与（反転）日時</label>
-  <input id="lastFlip" type="datetime-local" step="60">
+  <label for="lastFlip">前回の免疫付与（反転）時刻</label>
+  <input id="lastFlip" type="time" step="60">
   <div class="grid">
     <div>
       <label for="color">現在のポータルの色</label>
@@ -86,13 +86,18 @@ function run() {
   const raw = $('lastFlip').value;
   const mins = Number($('duration').value);
   const n = Number($('count').value);
-  if (!raw) { $('error').textContent = '前回の免疫付与日時を入力してください。'; return; }
+  if (!raw) { $('error').textContent = '前回の免疫付与時刻を入力してください。'; return; }
   if (!Number.isInteger(mins) || mins < 5 || mins > 55) {
     $('error').textContent = '免疫保持時間は5〜55分の整数で入力してください。'; return;
   }
-  const last = new Date(raw);
-  if (Number.isNaN(last.getTime())) { $('error').textContent = '日時を確認してください。'; return; }
+  const [hours, minutes] = raw.split(':').map(Number);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) {
+    $('error').textContent = '時刻を確認してください。'; return;
+  }
   const now = new Date();
+  const last = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
+  if (last > now) last.setDate(last.getDate() - 1);
+  if (Number.isNaN(last.getTime())) { $('error').textContent = '時刻を確認してください。'; return; }
   const elapsed = (now - last) / 60000;
   const remaining = mins - elapsed;
   const currentColor = $('color').value;
@@ -120,7 +125,7 @@ $('calculate').addEventListener('click', run);
 $('lastFlip').value = (() => {
   const d = new Date(Date.now() - 20 * 60000);
   const pad = x => String(x).padStart(2,'0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 })();
 run();
 </script>
