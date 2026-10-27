@@ -23,6 +23,8 @@ th { font-size: .9rem; }
 .note { font-size: .92rem; opacity: .85; }
 .result-head { font-size: 1.05rem; font-weight: 750; }
 .error { color: #d44; }
+.timeline-scroll { overflow-x: auto; margin-top: 12px; }
+.timeline-scroll svg { display: block; max-width: none; }
 @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } th, td { padding: 8px 4px; font-size: .9rem; } }
 </style>
 </head>
@@ -61,6 +63,12 @@ th { font-size: .9rem; }
   入力すると予測結果が表示されます。
 </section>
 <section class="panel">
+  <div class="result-head">時間ごとのポータルの色</div>
+  <div class="timeline-scroll">
+    <svg id="timeline" role="img" aria-label="免疫時間ごとのポータルの色の予測"></svg>
+  </div>
+</section>
+<section class="panel">
   <div class="result-head">反転予測一覧</div>
   <div style="overflow-x:auto">
     <table>
@@ -84,6 +92,57 @@ function fmtTime(d) {
   return new Intl.DateTimeFormat('ja-JP', {
     hour:'2-digit', minute:'2-digit', hour12:false
   }).format(d);
+}
+function renderTimeline(last, mins, n, currentColor) {
+  const svg = $('timeline');
+  const namespace = 'http://www.w3.org/2000/svg';
+  const cellWidth = 100;
+  const width = (n + 1) * cellWidth;
+  svg.setAttribute('viewBox', `0 0 ${width} 104`);
+  svg.setAttribute('width', width);
+  svg.setAttribute('height', 104);
+  svg.setAttribute('aria-label', `前回の反転から${n}回目までの色の予測`);
+  svg.replaceChildren();
+  for (let i = 0; i <= n; i++) {
+    const x = i * cellWidth;
+    const start = new Date(last.getTime() + mins * 60000 * i);
+    const isBlue = (currentColor === 'blue') === (i % 2 === 0);
+    const color = isBlue ? '#2589ff' : '#22a06b';
+    const label = isBlue ? '青' : '緑';
+    const rect = document.createElementNS(namespace, 'rect');
+    rect.setAttribute('x', x + 2);
+    rect.setAttribute('y', 8);
+    rect.setAttribute('width', cellWidth - 4);
+    rect.setAttribute('height', 42);
+    rect.setAttribute('rx', 3);
+    rect.setAttribute('fill', color);
+    svg.appendChild(rect);
+    const colorText = document.createElementNS(namespace, 'text');
+    colorText.setAttribute('x', x + cellWidth / 2);
+    colorText.setAttribute('y', 35);
+    colorText.setAttribute('text-anchor', 'middle');
+    colorText.setAttribute('fill', '#fff');
+    colorText.setAttribute('font-size', '16');
+    colorText.setAttribute('font-weight', '700');
+    colorText.textContent = label;
+    svg.appendChild(colorText);
+    const timeText = document.createElementNS(namespace, 'text');
+    timeText.setAttribute('x', x + cellWidth / 2);
+    timeText.setAttribute('y', 72);
+    timeText.setAttribute('text-anchor', 'middle');
+    timeText.setAttribute('fill', 'currentColor');
+    timeText.setAttribute('font-size', '12');
+    timeText.textContent = fmtTime(start);
+    svg.appendChild(timeText);
+    const dateText = document.createElementNS(namespace, 'text');
+    dateText.setAttribute('x', x + cellWidth / 2);
+    dateText.setAttribute('y', 90);
+    dateText.setAttribute('text-anchor', 'middle');
+    dateText.setAttribute('fill', 'currentColor');
+    dateText.setAttribute('font-size', '10');
+    dateText.textContent = `${start.getMonth() + 1}/${start.getDate()}`;
+    svg.appendChild(dateText);
+  }
 }
 function run() {
   $('error').textContent = '';
@@ -109,6 +168,7 @@ function run() {
   const currentLabel = currentColor === 'blue' ? '青（Resistance）' : '緑（Enlightened）';
   const first = new Date(last.getTime() + mins * 60000);
   const isPast = first <= now;
+  renderTimeline(last, mins, n, currentColor);
   $('summary').innerHTML =
     `<div>入力された前回の反転：<strong>${fmt(last)}</strong></div>` +
     `<div>現在の色：<strong class="${currentColor}">${currentLabel}</strong></div>` +
