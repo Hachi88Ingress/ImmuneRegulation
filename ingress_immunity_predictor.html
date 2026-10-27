@@ -97,15 +97,14 @@ function renderTimeline(last, mins, n, currentColor) {
   const svg = $('timeline');
   const namespace = 'http://www.w3.org/2000/svg';
   const cellWidth = 100;
-  const width = (n + 1) * cellWidth;
-  svg.setAttribute('viewBox', `0 0 ${width} 104`);
+  const width = n * cellWidth;
+  svg.setAttribute('viewBox', `0 0 ${width} 82`);
   svg.setAttribute('width', width);
-  svg.setAttribute('height', 104);
+  svg.setAttribute('height', 82);
   svg.setAttribute('aria-label', `前回の反転から${n}回目までの色の予測`);
   svg.replaceChildren();
-  for (let i = 0; i <= n; i++) {
+  for (let i = 0; i < n; i++) {
     const x = i * cellWidth;
-    const start = new Date(last.getTime() + mins * 60000 * i);
     const isBlue = (currentColor === 'blue') === (i % 2 === 0);
     const color = isBlue ? '#2589ff' : '#22a06b';
     const label = isBlue ? '青' : '緑';
@@ -126,22 +125,26 @@ function renderTimeline(last, mins, n, currentColor) {
     colorText.setAttribute('font-weight', '700');
     colorText.textContent = label;
     svg.appendChild(colorText);
+  }
+  for (let i = 0; i <= n; i++) {
+    const x = i * cellWidth;
+    const boundary = new Date(last.getTime() + mins * 60000 * i);
+    const tick = document.createElementNS(namespace, 'line');
+    tick.setAttribute('x1', x);
+    tick.setAttribute('x2', x);
+    tick.setAttribute('y1', 4);
+    tick.setAttribute('y2', 54);
+    tick.setAttribute('stroke', 'currentColor');
+    tick.setAttribute('stroke-opacity', '.5');
+    svg.appendChild(tick);
     const timeText = document.createElementNS(namespace, 'text');
-    timeText.setAttribute('x', x + cellWidth / 2);
-    timeText.setAttribute('y', 72);
-    timeText.setAttribute('text-anchor', 'middle');
+    timeText.setAttribute('x', i === 0 ? x + 3 : i === n ? x - 3 : x);
+    timeText.setAttribute('y', 74);
+    timeText.setAttribute('text-anchor', i === 0 ? 'start' : i === n ? 'end' : 'middle');
     timeText.setAttribute('fill', 'currentColor');
     timeText.setAttribute('font-size', '12');
-    timeText.textContent = fmtTime(start);
+    timeText.textContent = fmtTime(boundary);
     svg.appendChild(timeText);
-    const dateText = document.createElementNS(namespace, 'text');
-    dateText.setAttribute('x', x + cellWidth / 2);
-    dateText.setAttribute('y', 90);
-    dateText.setAttribute('text-anchor', 'middle');
-    dateText.setAttribute('fill', 'currentColor');
-    dateText.setAttribute('font-size', '10');
-    dateText.textContent = `${start.getMonth() + 1}/${start.getDate()}`;
-    svg.appendChild(dateText);
   }
 }
 function run() {
